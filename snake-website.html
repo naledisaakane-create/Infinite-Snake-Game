@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>∞ SNAKE — Infinite Levels. One Life.</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--neon:#00ffcc;--neon2:#ff00aa;--neon3:#ffcc00;--bg:#03050a;--bg2:#060c12;--text:#c8e8e0;--dim:rgba(200,232,224,0.45);}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;font-weight:300;overflow-x:hidden;cursor:none;}
+#cursor{position:fixed;width:10px;height:10px;background:var(--neon);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 15px var(--neon);mix-blend-mode:screen;transition:transform 0.1s,background 0.2s;}
+#cursor-ring{position:fixed;width:34px;height:34px;border:1px solid var(--neon);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);opacity:0.5;transition:all 0.15s ease;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,204,0.012) 3px,rgba(0,255,204,0.012) 4px);pointer-events:none;z-index:1000;}
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:20px 48px;background:linear-gradient(to bottom,rgba(3,5,10,0.97),transparent);}
+.nav-logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.2rem;color:var(--neon);text-shadow:0 0 20px var(--neon);letter-spacing:0.2em;text-decoration:none;}
+.nav-links{display:flex;gap:28px;list-style:none;}
+.nav-links a{color:var(--dim);text-decoration:none;font-size:0.7rem;letter-spacing:0.25em;text-transform:uppercase;transition:color 0.2s,text-shadow 0.2s;font-family:'Share Tech Mono',monospace;}
+.nav-links a:hover{color:var(--neon);text-shadow:0 0 10px var(--neon);}
+#hero{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:100px 40px 80px;}
+#hero-canvas{position:absolute;inset:0;z-index:0;}
+.hero-content{position:relative;z-index:2;text-align:center;max-width:800px;}
+.hero-eyebrow{font-family:'Share Tech Mono',monospace;font-size:0.68rem;letter-spacing:0.45em;color:var(--neon2);text-shadow:0 0 10px var(--neon2);margin-bottom:22px;animation:fadeUp 0.8s ease both;}
+.hero-title{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(4rem,13vw,9rem);line-height:0.9;color:var(--neon);text-shadow:0 0 40px var(--neon),0 0 120px rgba(0,255,204,0.25);letter-spacing:0.05em;animation:fadeUp 0.8s 0.1s ease both,glitch 7s 2s infinite;}
+.hero-sub{font-size:clamp(0.95rem,2.2vw,1.3rem);margin:26px 0 42px;color:var(--dim);letter-spacing:0.08em;line-height:1.7;animation:fadeUp 0.8s 0.2s ease both;}
+.hero-sub span{color:var(--neon);font-weight:600;}
+.hero-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;animation:fadeUp 0.8s 0.3s ease both;}
+.btn-primary{background:var(--neon);color:var(--bg);border:none;font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:0.22em;padding:16px 44px;cursor:none;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all 0.2s;box-shadow:0 0 30px rgba(0,255,204,0.35);}
+.btn-primary:hover{background:#fff;box-shadow:0 0 60px rgba(0,255,204,0.7);transform:translateY(-2px);}
+.btn-outline{background:transparent;color:var(--neon);border:1px solid var(--neon);font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.82rem;letter-spacing:0.22em;padding:16px 44px;cursor:none;text-decoration:none;display:inline-block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);transition:all 0.2s;}
+.btn-outline:hover{background:rgba(0,255,204,0.1);transform:translateY(-2px);}
+.hero-stats{display:flex;gap:50px;justify-content:center;margin-top:64px;animation:fadeUp 0.8s 0.4s ease both;flex-wrap:wrap;}
+.stat{text-align:center;}
+.stat-num{font-family:'Orbitron',sans-serif;font-weight:900;font-size:2rem;color:var(--neon);text-shadow:0 0 20px var(--neon);display:block;}
+.stat-label{font-size:0.62rem;letter-spacing:0.35em;color:var(--dim);text-transform:uppercase;margin-top:4px;font-family:'Share Tech Mono',monospace;}
+.neon-line{height:1px;background:linear-gradient(to right,transparent,var(--neon),transparent);opacity:0.2;}
+.section-label{font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:0.5em;color:var(--neon2);text-transform:uppercase;margin-bottom:12px;}
+.section-title{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(1.6rem,4vw,2.8rem);color:var(--neon);text-shadow:0 0 20px rgba(0,255,204,0.3);margin-bottom:16px;letter-spacing:0.05em;}
+#play{padding:100px 40px;background:var(--bg2);}
+.play-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;}
+.play-text p{color:var(--dim);line-height:1.85;margin-bottom:20px;font-size:0.92rem;}
+.game-frame-wrap{position:relative;border:2px solid var(--neon);box-shadow:0 0 60px rgba(0,255,204,0.12);background:#050a05;aspect-ratio:5/4;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.game-frame-wrap iframe{width:100%;height:100%;border:none;display:block;}
+.corner{position:absolute;width:18px;height:18px;border-color:var(--neon);border-style:solid;}
+.corner-tl{top:-2px;left:-2px;border-width:2px 0 0 2px;}
+.corner-tr{top:-2px;right:-2px;border-width:2px 2px 0 0;}
+.corner-bl{bottom:-2px;left:-2px;border-width:0 0 2px 2px;}
+.corner-br{bottom:-2px;right:-2px;border-width:0 2px 2px 0;}
+#about{padding:100px 40px;}
+.about-inner{max-width:1100px;margin:0 auto;}
+.about-header{text-align:center;margin-bottom:60px;}
+.about-header p{color:var(--dim);max-width:480px;margin:0 auto;line-height:1.8;font-size:0.92rem;}
+.levels-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.level-card{border:1px solid rgba(255,255,255,0.06);padding:22px 18px;position:relative;overflow:hidden;background:rgba(255,255,255,0.018);transition:transform 0.3s,border-color 0.3s,box-shadow 0.3s;}
+.level-card:hover{transform:translateY(-5px);}
+.level-num{font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.62rem;opacity:0.35;letter-spacing:0.3em;margin-bottom:8px;}
+.level-name{font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.85rem;margin-bottom:7px;letter-spacing:0.1em;}
+.level-desc{font-size:0.72rem;color:var(--dim);line-height:1.6;font-family:'Share Tech Mono',monospace;}
+.level-dot{width:7px;height:7px;border-radius:50%;position:absolute;top:20px;right:18px;}
+#howtoplay{padding:100px 40px;background:var(--bg2);}
+.howto-inner{max-width:900px;margin:0 auto;text-align:center;}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:32px;margin-top:60px;}
+.step{display:flex;flex-direction:column;align-items:center;gap:14px;}
+.step-icon{width:64px;height:64px;border:1px solid rgba(0,255,204,0.25);display:flex;align-items:center;justify-content:center;font-size:1.7rem;background:rgba(0,255,204,0.04);clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);}
+.step h3{font-family:'Orbitron',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.18em;color:var(--neon);}
+.step p{font-size:0.78rem;color:var(--dim);line-height:1.75;}
+.controls-row{display:flex;justify-content:center;gap:48px;margin-top:60px;flex-wrap:wrap;}
+.control-group{text-align:center;}
+.control-label{font-size:0.62rem;letter-spacing:0.3em;color:var(--dim);margin-bottom:12px;font-family:'Share Tech Mono',monospace;text-transform:uppercase;}
+.keys{display:flex;flex-direction:column;align-items:center;gap:4px;}
+.key-row{display:flex;gap:4px;}
+.key{width:36px;height:36px;border:1px solid rgba(0,255,204,0.35);display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-family:'Share Tech Mono',monospace;color:var(--neon);background:rgba(0,255,204,0.04);clip-path:polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%);}
+#leaderboard{padding:100px 40px;}
+.lb-inner{max-width:720px;margin:0 auto;text-align:center;}
+.lb-inner>p{color:var(--dim);font-size:0.85rem;margin-bottom:0;}
+.lb-table{margin-top:40px;width:100%;border-collapse:collapse;}
+.lb-table th{font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:0.3em;color:var(--dim);text-transform:uppercase;padding:12px 16px;border-bottom:1px solid rgba(0,255,204,0.12);text-align:left;}
+.lb-table td{padding:15px 16px;font-family:'Share Tech Mono',monospace;font-size:0.82rem;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.2s;}
+.lb-table tr:hover td{background:rgba(0,255,204,0.03);}
+.lb-rank{font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.9rem;}
+.rank-1{color:#ffcc00;text-shadow:0 0 10px #ffcc00;}
+.rank-2{color:#aaaaaa;}
+.rank-3{color:#cc6600;}
+.lb-score{color:var(--neon);font-weight:700;}
+.lb-level{color:var(--neon2);}
+.lb-yours{margin-top:28px;border:1px solid rgba(0,255,204,0.18);padding:22px 24px;background:rgba(0,255,204,0.025);display:flex;align-items:center;justify-content:space-between;}
+.lb-yours-label{font-size:0.68rem;letter-spacing:0.3em;color:var(--dim);font-family:'Share Tech Mono',monospace;}
+.lb-yours-score{font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:var(--neon);text-shadow:0 0 15px var(--neon);}
+#download{padding:100px 40px;background:var(--bg2);}
+.download-inner{max-width:900px;margin:0 auto;text-align:center;}
+.download-inner>p{color:var(--dim);line-height:1.8;max-width:480px;margin:0 auto 48px;font-size:0.92rem;}
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:24px;max-width:660px;margin:0 auto;}
+.price-card{border:1px solid rgba(0,255,204,0.18);padding:36px 28px;text-align:center;position:relative;background:rgba(0,255,204,0.02);transition:transform 0.3s,border-color 0.3s,box-shadow 0.3s;}
+.price-card:hover{transform:translateY(-6px);border-color:var(--neon);box-shadow:0 0 40px rgba(0,255,204,0.08);}
+.price-card.featured{border-color:var(--neon);box-shadow:0 0 40px rgba(0,255,204,0.1);}
+.price-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:var(--neon);color:var(--bg);font-family:'Orbitron',sans-serif;font-size:0.58rem;font-weight:700;letter-spacing:0.2em;padding:4px 16px;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);}
+.price-name{font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:0.22em;color:var(--dim);margin-bottom:14px;}
+.price-amount{font-family:'Orbitron',sans-serif;font-weight:900;font-size:2.4rem;color:var(--neon);text-shadow:0 0 20px var(--neon);margin-bottom:20px;}
+.price-amount span{font-size:1rem;opacity:0.5;}
+.price-features{list-style:none;margin-bottom:28px;}
+.price-features li{font-size:0.75rem;color:var(--dim);padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-family:'Share Tech Mono',monospace;display:flex;align-items:center;gap:8px;text-align:left;}
+.price-features li::before{content:'▸';color:var(--neon);flex-shrink:0;}
+.btn-price{display:block;width:100%;background:transparent;border:1px solid var(--neon);color:var(--neon);font-family:'Orbitron',sans-serif;font-size:0.72rem;font-weight:700;letter-spacing:0.2em;padding:13px;cursor:none;transition:all 0.2s;text-transform:uppercase;text-decoration:none;}
+.btn-price:hover{background:var(--neon);color:var(--bg);}
+.price-card.featured .btn-price{background:var(--neon);color:var(--bg);}
+.price-card.featured .btn-price:hover{background:#fff;}
+#contact{padding:100px 40px;}
+.contact-inner{max-width:580px;margin:0 auto;text-align:center;}
+.contact-inner>p{color:var(--dim);line-height:1.8;margin-bottom:40px;font-size:0.92rem;}
+.contact-form{display:flex;flex-direction:column;gap:16px;text-align:left;}
+.form-group label{display:block;font-family:'Share Tech Mono',monospace;font-size:0.62rem;letter-spacing:0.32em;color:var(--dim);margin-bottom:8px;text-transform:uppercase;}
+.form-group input,.form-group textarea,.form-group select{width:100%;background:rgba(0,255,204,0.03);border:1px solid rgba(0,255,204,0.18);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.85rem;padding:14px 16px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--neon);box-shadow:0 0 20px rgba(0,255,204,0.08);}
+.form-group select option{background:#060c12;}
+.form-group textarea{resize:vertical;min-height:120px;}
+.form-submit{background:var(--neon);color:var(--bg);border:none;font-family:'Orbitron',sans-serif;font-weight:700;font-size:0.78rem;letter-spacing:0.25em;padding:16px;cursor:none;transition:all 0.2s;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);margin-top:8px;width:100%;}
+.form-submit:hover{background:#fff;box-shadow:0 0 30px rgba(0,255,204,0.5);}
+#form-success{display:none;background:rgba(0,255,204,0.07);border:1px solid rgba(0,255,204,0.25);padding:22px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:0.85rem;color:var(--neon);margin-top:16px;}
+footer{padding:44px 48px;border-top:1px solid rgba(0,255,204,0.1);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+.footer-logo{font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.1rem;color:var(--neon);text-shadow:0 0 15px var(--neon);letter-spacing:0.2em;}
+.footer-copy{font-size:0.68rem;color:var(--dim);font-family:'Share Tech Mono',monospace;letter-spacing:0.1em;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes glitch{0%,92%,100%{text-shadow:0 0 40px var(--neon),0 0 120px rgba(0,255,204,0.25);}93%{text-shadow:-4px 0 var(--neon2),4px 0 var(--neon3),0 0 40px var(--neon);}95%{text-shadow:4px 0 var(--neon2),-4px 0 var(--neon3),0 0 40px var(--neon);}97%{text-shadow:0 0 40px var(--neon),0 0 120px rgba(0,255,204,0.25);}}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity 0.7s ease,transform 0.7s ease;}
+.reveal.visible{opacity:1;transform:none;}
+@media(max-width:768px){nav{padding:16px 20px;}.nav-links{display:none;}.play-inner{grid-template-columns:1fr;}.hero-stats{gap:24px;}footer{flex-direction:column;text-align:center;}.lb-yours{flex-direction:column;gap:8px;}}
+</style>
+</head>
+<body>
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <a href="#hero" class="nav-logo">∞ SNAKE</a>
+  <ul class="nav-links">
+    <li><a href="#play">Play</a></li>
+    <li><a href="#about">Levels</a></li>
+    <li><a href="#howtoplay">How To Play</a></li>
+    <li><a href="#leaderboard">Leaderboard</a></li>
+    <li><a href="#download">Get Game</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <canvas id="hero-canvas"></canvas>
+  <div class="hero-content">
+    <div class="hero-eyebrow">// INFINITE LEVELS · ONE LIFE · ZERO MERCY</div>
+    <h1 class="hero-title">∞ SNAKE</h1>
+    <p class="hero-sub">Every level is a <span>new universe</span>. Every death is final.<br>How far can you go?</p>
+    <div class="hero-btns">
+      <a href="#play" class="btn-primary">PLAY FREE NOW</a>
+      <a href="#download" class="btn-outline">GET THE GAME</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num">∞</span><span class="stat-label">Levels</span></div>
+      <div class="stat"><span class="stat-num">10+</span><span class="stat-label">Universes</span></div>
+      <div class="stat"><span class="stat-num">1</span><span class="stat-label">Life</span></div>
+      <div class="stat"><span class="stat-num">0</span><span class="stat-label">Mercy</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="play">
+  <div class="play-inner">
+    <div class="play-text reveal">
+      <div class="section-label">// PLAY NOW</div>
+      <h2 class="section-title">FREE IN<br>YOUR BROWSER</h2>
+      <p>No download needed. No sign-up. Just pure infinite snake — right here, right now.</p>
+      <p>Every 5 food, the entire universe transforms. New colors, new atmosphere, higher speed. The further you go, the more intense it gets.</p>
+      <a href="snake-infinite.html" target="_blank" class="btn-primary" style="display:inline-block;margin-top:8px;">OPEN GAME ▸</a>
+    </div>
+    <div class="game-frame-wrap reveal">
+      <div class="corner corner-tl"></div><div class="corner corner-tr"></div>
+      <div class="corner corner-bl"></div><div class="corner corner-br"></div>
+      <iframe src="snake-infinite.html" title="∞ SNAKE" loading="lazy"></iframe>
+    </div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="about">
+  <div class="about-inner">
+    <div class="about-header reveal">
+      <div class="section-label">// THE MULTIVERSE</div>
+      <h2 class="section-title">10 UNIVERSES.<br>INFINITE CYCLES.</h2>
+      <p>Master all 10 themed universes and they repeat — mutated, faster, stranger. The game never truly ends.</p>
+    </div>
+    <div class="levels-grid" id="levels-grid"></div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="howtoplay">
+  <div class="howto-inner">
+    <div class="reveal">
+      <div class="section-label">// MANUAL</div>
+      <h2 class="section-title">HOW TO PLAY</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="step-icon">🐍</div><h3>MOVE</h3><p>Guide your snake using arrow keys, WASD, or swipe on mobile.</p></div>
+      <div class="step reveal"><div class="step-icon">⚡</div><h3>EAT</h3><p>Consume the food item to grow longer and earn points.</p></div>
+      <div class="step reveal"><div class="step-icon">🌌</div><h3>ASCEND</h3><p>Every 5 food, the universe shifts — new theme, new speed, new chaos.</p></div>
+      <div class="step reveal"><div class="step-icon">💀</div><h3>SURVIVE</h3><p>Hit a wall or bite yourself and it ends. You only have one life.</p></div>
+    </div>
+    <div class="controls-row reveal">
+      <div class="control-group">
+        <div class="control-label">Keyboard</div>
+        <div class="keys"><div class="key-row"><div class="key">W</div></div><div class="key-row"><div class="key">A</div><div class="key">S</div><div class="key">D</div></div></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Arrow Keys</div>
+        <div class="keys"><div class="key-row"><div class="key">↑</div></div><div class="key-row"><div class="key">←</div><div class="key">↓</div><div class="key">→</div></div></div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">Mobile</div>
+        <div class="keys"><div class="key-row"><div class="key" style="width:80px;font-size:0.58rem;">SWIPE</div></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="leaderboard">
+  <div class="lb-inner">
+    <div class="reveal">
+      <div class="section-label">// HALL OF LEGENDS</div>
+      <h2 class="section-title">LEADERBOARD</h2>
+      <p>The greatest serpents to ever traverse the multiverse.</p>
+    </div>
+    <table class="lb-table reveal">
+      <thead><tr><th>#</th><th>PLAYER</th><th>SCORE</th><th>LEVEL</th><th>UNIVERSE</th></tr></thead>
+      <tbody>
+        <tr><td class="lb-rank rank-1">🥇</td><td>SHADOW_X</td><td class="lb-score">847</td><td class="lb-level">LVL 169</td><td>QUANTUM Ω17</td></tr>
+        <tr><td class="lb-rank rank-2">🥈</td><td>NEON_VIPER</td><td class="lb-score">632</td><td class="lb-level">LVL 126</td><td>BLOOD MOON Ω13</td></tr>
+        <tr><td class="lb-rank rank-3">🥉</td><td>ZERO_COOL</td><td class="lb-score">521</td><td class="lb-level">LVL 104</td><td>GHOST REALM Ω11</td></tr>
+        <tr><td style="color:var(--dim)">4</td><td>SERPENT_GOD</td><td class="lb-score">418</td><td class="lb-level">LVL 83</td><td>SOLAR FLARE Ω9</td></tr>
+        <tr><td style="color:var(--dim)">5</td><td>VOID_RUNNER</td><td class="lb-score">305</td><td class="lb-level">LVL 61</td><td>NEON CITY Ω7</td></tr>
+      </tbody>
+    </table>
+    <div class="lb-yours reveal">
+      <div>
+        <div class="lb-yours-label">YOUR PERSONAL BEST</div>
+        <div style="font-size:0.65rem;color:var(--dim);font-family:'Share Tech Mono',monospace;margin-top:4px;">Saved locally in your browser</div>
+      </div>
+      <div class="lb-yours-score" id="local-best">—</div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="download">
+  <div class="download-inner">
+    <div class="reveal">
+      <div class="section-label">// GET THE GAME</div>
+      <h2 class="section-title">OWN IT FOREVER</h2>
+      <p>Download ∞ SNAKE as a standalone HTML file and play anywhere — no internet required. Works on any device with a browser.</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="price-card">
+        <div class="price-name">FREE</div>
+        <div class="price-amount">$0</div>
+        <ul class="price-features">
+          <li>Play in browser</li><li>All 10 universes</li><li>Infinite levels</li><li>Local high score</li>
+        </ul>
+        <a href="#play" class="btn-price">PLAY NOW</a>
+      </div>
+      <div class="price-card featured">
+        <div class="price-badge">BEST VALUE</div>
+        <div class="price-name">DOWNLOAD</div>
+        <div class="price-amount">$2<span>.99</span></div>
+        <ul class="price-features">
+          <li>Offline HTML file</li><li>All 10 universes</li><li>Infinite levels</li><li>No ads, ever</li><li>Free future updates</li>
+        </ul>
+        <a href="snake-infinite.html" download class="btn-price">BUY &amp; DOWNLOAD</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-line"></div>
+
+<section id="contact">
+  <div class="contact-inner">
+    <div class="reveal">
+      <div class="section-label">// REACH OUT</div>
+      <h2 class="section-title">CONTACT</h2>
+      <p>Bug reports, feedback, or business inquiries — drop a message and we'll get back to you.</p>
+    </div>
+    <form class="contact-form reveal" id="contact-form" onsubmit="handleSubmit(event)">
+      <div class="form-group"><label>Your Name</label><input type="text" placeholder="PLAYER_ONE" required></div>
+      <div class="form-group"><label>Email Address</label><input type="email" placeholder="you@domain.com" required></div>
+      <div class="form-group"><label>Subject</label>
+        <select><option>Bug Report</option><option>Feedback / Suggestion</option><option>Business Inquiry</option><option>Other</option></select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea placeholder="Type your message here..."></textarea></div>
+      <button type="submit" class="form-submit">SEND MESSAGE ▸</button>
+    </form>
+    <div id="form-success">✓ MESSAGE TRANSMITTED. WE'LL RESPOND WITHIN 24 HOURS.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">∞ SNAKE</div>
+  <div class="footer-copy">© 2026 ∞ SNAKE. All rights reserved. You own this. 🐍</div>
+</footer>
+
+<script>
+const cursor=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px';});
+setInterval(()=>{rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';},16);
+document.querySelectorAll('a,button').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursor.style.transform='translate(-50%,-50%) scale(2)';cursor.style.background='var(--neon2)';});
+  el.addEventListener('mouseleave',()=>{cursor.style.transform='translate(-50%,-50%) scale(1)';cursor.style.background='var(--neon)';});
+});
+
+const hc=document.getElementById('hero-canvas'),hctx=hc.getContext('2d');
+function resize(){hc.width=window.innerWidth;hc.height=window.innerHeight;}
+resize();window.addEventListener('resize',resize);
+const pts=[];let hd={x:1,y:0},hx=0,hy=Math.floor(Math.random()*15)*30;
+for(let i=0;i<180;i++)pts.push({x:hx-i*24,y:hy});
+let tick=0;
+function heroDraw(){
+  hctx.clearRect(0,0,hc.width,hc.height);
+  hctx.strokeStyle='rgba(0,255,204,0.04)';hctx.lineWidth=1;
+  for(let x=0;x<hc.width;x+=40){hctx.beginPath();hctx.moveTo(x,0);hctx.lineTo(x,hc.height);hctx.stroke();}
+  for(let y=0;y<hc.height;y+=40){hctx.beginPath();hctx.moveTo(0,y);hctx.lineTo(hc.width,y);hctx.stroke();}
+  if(tick++%3===0){
+    if(Math.random()<0.04){const ds=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];const nd=ds[Math.floor(Math.random()*4)];if(nd.x!==-hd.x||nd.y!==-hd.y)hd=nd;}
+    hx+=hd.x*24;hy+=hd.y*24;
+    if(hx<0)hx=hc.width;if(hx>hc.width)hx=0;if(hy<0)hy=hc.height;if(hy>hc.height)hy=0;
+    pts.unshift({x:hx,y:hy});pts.pop();
+  }
+  pts.forEach((p,i)=>{hctx.fillStyle=`rgba(0,255,204,${(1-i/pts.length)*0.12})`;hctx.fillRect(p.x,p.y,22,22);});
+  requestAnimationFrame(heroDraw);
+}
+heroDraw();
+
+const LEVELS=[
+  {num:'01',name:'THE VOID',desc:'Twinkling stars. Neon cyan trails.',color:'#00ffcc'},
+  {num:'02',name:'MAGMA CORE',desc:'Rising lava. Scorching orange fire.',color:'#ff6600'},
+  {num:'03',name:'DEEP OCEAN',desc:'Floating bubbles. Bioluminescent blue.',color:'#00aaff'},
+  {num:'04',name:'NEON CITY',desc:'Grid city. Pulsing magenta chaos.',color:'#ff00ff'},
+  {num:'05',name:'ARCTIC ZERO',desc:'Snowfall. Crystalline white silence.',color:'#aaeeff'},
+  {num:'06',name:'RADIOACTIVE',desc:'Radiation rings. Toxic lime green.',color:'#aaff00'},
+  {num:'07',name:'BLOOD MOON',desc:'Ember rain. Deep crimson darkness.',color:'#ff2200'},
+  {num:'08',name:'QUANTUM DREAM',desc:'Drifting particles. Violet dreamscape.',color:'#cc88ff'},
+  {num:'09',name:'SOLAR FLARE',desc:'Solar rays. Blinding golden eruption.',color:'#ffdd00'},
+  {num:'10',name:'GHOST REALM',desc:'Spectral orbs. Haunted serpent.',color:'#88ffee'},
+];
+const grid=document.getElementById('levels-grid');
+LEVELS.forEach(l=>{
+  const c=document.createElement('div');
+  c.className='level-card reveal';
+  c.style.cssText=`border-color:${l.color}30;background:${l.color}08`;
+  c.innerHTML=`<div class="level-num">LVL ${l.num}</div><div class="level-name" style="color:${l.color}">${l.name}</div><div class="level-desc">${l.desc}</div><div class="level-dot" style="background:${l.color};box-shadow:0 0 8px ${l.color}"></div>`;
+  c.addEventListener('mouseenter',()=>{c.style.borderColor=l.color+'66';c.style.boxShadow=`0 0 20px ${l.color}20`;});
+  c.addEventListener('mouseleave',()=>{c.style.borderColor=l.color+'30';c.style.boxShadow='none';});
+  grid.appendChild(c);
+});
+
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach((e,i)=>{if(e.isIntersecting)setTimeout(()=>e.target.classList.add('visible'),i*55);});
+},{threshold:0.1,rootMargin:'0px 0px -30px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+const lb=localStorage.getItem('snakeBest2');
+document.getElementById('local-best').textContent=lb?`SCORE: ${lb}`:'NOT SET YET';
+
+function handleSubmit(e){
+  e.preventDefault();
+  document.getElementById('contact-form').style.display='none';
+  document.getElementById('form-success').style.display='block';
+}
+</script>
+</body>
+</html>
