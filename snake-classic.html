@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>∞ SNAKE — Classic Mode</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: #f7f7f7;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+
+  /* Top HUD like dinosaur game */
+  #hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 600px;
+    margin-bottom: 8px;
+    padding: 0 4px;
+  }
+
+  #hud-title {
+    font-size: 0.75rem;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    color: #535353;
+    text-transform: uppercase;
+  }
+
+  #hud-scores {
+    display: flex;
+    gap: 24px;
+  }
+
+  .hud-score {
+    text-align: right;
+  }
+
+  .hud-score-label {
+    font-size: 0.55rem;
+    color: #535353;
+    letter-spacing: 0.15em;
+    display: block;
+  }
+
+  .hud-score-val {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #535353;
+    letter-spacing: 0.1em;
+  }
+
+  /* Game area like dinosaur */
+  #game-wrap {
+    position: relative;
+    width: 600px;
+    background: #f7f7f7;
+    border-top: 2px solid #535353;
+    border-bottom: 2px solid #535353;
+  }
+
+  canvas {
+    display: block;
+  }
+
+  /* Level badge */
+  #level-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: #aaaaaa;
+    text-transform: uppercase;
+  }
+
+  /* Overlay like dinosaur game over screen */
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #f7f7f7;
+    transition: opacity 0.2s;
+  }
+
+  #overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #overlay-icon {
+    font-size: 3rem;
+    line-height: 1;
+  }
+
+  #overlay-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    letter-spacing: 0.3em;
+    color: #535353;
+    text-transform: uppercase;
+  }
+
+  #overlay-sub {
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  #overlay-score {
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    color: #535353;
+    font-weight: bold;
+  }
+
+  /* Restart button — like dinosaur spacebar prompt */
+  #restart-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+  }
+
+  .key-hint {
+    border: 2px solid #535353;
+    padding: 4px 12px;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: #535353;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .key-hint:hover {
+    background: #535353;
+    color: #f7f7f7;
+  }
+
+  /* Bottom instruction like dinosaur */
+  #instructions {
+    width: 600px;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+
+  .inst {
+    font-size: 0.6rem;
+    color: #aaaaaa;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  /* Level transition flash */
+  #level-flash {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #f7f7f7;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    gap: 8px;
+  }
+
+  #level-flash.show { opacity: 1; }
+
+  #lf-num {
+    font-size: 2.5rem;
+    font-weight: bold;
+    letter-spacing: 0.3em;
+    color: #535353;
+  }
+
+  #lf-name {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: #888;
+    text-transform: uppercase;
+  }
+
+  /* High score shake animation */
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+
+  .shake { animation: shake 0.3s ease; }
+
+  /* Pixel font feel */
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .blink { animation: blink 1s infinite; }
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hud-title">∞ SNAKE</div>
+  <div id="hud-scores">
+    <div class="hud-score">
+      <span class="hud-score-label">HI</span>
+      <span class="hud-score-val" id="best-display">00000</span>
+    </div>
+    <div class="hud-score">
+      <span class="hud-score-label">&nbsp;</span>
+      <span class="hud-score-val" id="score-display">00000</span>
+    </div>
+  </div>
+</div>
+
+<!-- Game -->
+<div id="game-wrap">
+  <canvas id="c"></canvas>
+  <div id="level-badge" id="level-badge">LVL 1</div>
+
+  <!-- Level flash -->
+  <div id="level-flash">
+    <div id="lf-num">LVL 1</div>
+    <div id="lf-name">THE VOID</div>
+  </div>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <div id="overlay-icon">🐍</div>
+    <div id="overlay-title">∞ SNAKE</div>
+    <div id="overlay-sub">Classic Mode</div>
+    <div id="overlay-score" id="overlay-score" style="opacity:0">—</div>
+    <div id="restart-hint">
+      <div class="key-hint" onclick="startGame()">SPACE / ENTER</div>
+      <div style="font-size:0.6rem;color:#aaa;letter-spacing:0.1em;">TO START</div>
+    </div>
+  </div>
+</div>
+
+<!-- Instructions -->
+<div id="instructions">
+  <span class="inst">↑ ↓ ← → · WASD · SWIPE</span>
+  <span class="inst" id="level-name-bottom">THE VOID</span>
+  <span class="inst">EVERY 5 FOOD = NEW LEVEL</span>
+</div>
+
+<script>
+// ─── SETUP ────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const COLS = 30;
+const ROWS = 20;
+const CELL = 20;
+canvas.width = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+// ─── LEVEL THEMES (minimal/classic style) ─────────────────────────
+const LEVELS = [
+  { name: "THE VOID",      bg: "#f7f7f7", snake: "#535353", food: "#535353", grid: "rgba(0,0,0,0.04)", obstacle: "#888888" },
+  { name: "MAGMA CORE",    bg: "#fff8f5", snake: "#8B2500", food: "#CC4400", grid: "rgba(139,37,0,0.04)", obstacle: "#CC4400" },
+  { name: "DEEP OCEAN",    bg: "#f5f8ff", snake: "#003366", food: "#0055aa", grid: "rgba(0,51,102,0.04)", obstacle: "#0055aa" },
+  { name: "NEON CITY",     bg: "#fdf5ff", snake: "#440066", food: "#880088", grid: "rgba(68,0,102,0.04)", obstacle: "#880088" },
+  { name: "ARCTIC ZERO",   bg: "#f5feff", snake: "#004455", food: "#006677", grid: "rgba(0,68,85,0.04)",  obstacle: "#006677" },
+  { name: "RADIOACTIVE",   bg: "#f8fff5", snake: "#2a4400", food: "#446600", grid: "rgba(42,68,0,0.04)",  obstacle: "#446600" },
+  { name: "BLOOD MOON",    bg: "#fff5f5", snake: "#660000", food: "#990000", grid: "rgba(102,0,0,0.04)",  obstacle: "#990000" },
+  { name: "QUANTUM DREAM", bg: "#faf5ff", snake: "#330055", food: "#550077", grid: "rgba(51,0,85,0.04)",  obstacle: "#550077" },
+  { name: "SOLAR FLARE",   bg: "#fffdf5", snake: "#554400", food: "#886600", grid: "rgba(85,68,0,0.04)",  obstacle: "#886600" },
+  { name: "GHOST REALM",   bg: "#f5fffd", snake: "#1a3330", food: "#2a5550", grid: "rgba(26,51,48,0.04)", obstacle: "#2a5550" },
+];
+
+function getTheme(level) {
+  return LEVELS[level % LEVELS.length];
+}
+
+// ─── STATE ────────────────────────────────────────────────────────
+let snake, dir, nextDir, food, obstacles, score, running, loopTimer, level;
+let best = parseInt(localStorage.getItem('snakeClassicBest') || '0');
+let theme = getTheme(0);
+let clouds = [];
+let frameCount = 0;
+
+// init clouds (like dino game background)
+function initClouds() {
+  clouds = [];
+  for (let i = 0; i < 4; i++) {
+    clouds.push({
+      x: Math.random() * canvas.width,
+      y: 20 + Math.random() * 60,
+      w: 40 + Math.random() * 40,
+      speed: 0.3 + Math.random() * 0.3
+    });
+  }
+}
+
+function init() {
+  const midX = Math.floor(COLS / 2);
+  const midY = Math.floor(ROWS / 2);
+  snake = [
+    { x: midX + 1, y: midY },
+    { x: midX, y: midY },
+    { x: midX - 1, y: midY }
+  ];
+  dir = { x: 1, y: 0 };
+  nextDir = { x: 1, y: 0 };
+  score = 0;
+  level = 0;
+  obstacles = [];
+  theme = getTheme(0);
+  updateHUD();
+  placeFood();
+  initClouds();
+}
+
+function placeFood() {
+  let pos;
+  do {
+    pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+  } while (
+    snake.some(s => s.x === pos.x && s.y === pos.y) ||
+    obstacles.some(o => o.x === pos.x && o.y === pos.y)
+  );
+  food = pos;
+}
+
+function addObstacle() {
+  // add a wall block obstacle as levels increase (like cacti in dino)
+  if (level < 3) return; // no obstacles first 3 levels
+  let pos;
+  let attempts = 0;
+  do {
+    pos = { x: Math.floor(Math.random() * COLS), y: Math.floor(Math.random() * ROWS) };
+    attempts++;
+  } while (
+    attempts < 50 &&
+    (snake.some(s => s.x === pos.x && s.y === pos.y) ||
+    obstacles.some(o => o.x === pos.x && o.y === pos.y) ||
+    (food && food.x === pos.x && food.y === pos.y))
+  );
+  if (attempts < 50) obstacles.push(pos);
+}
+
+function getSpeed() {
+  return Math.max(60, 220 - level * 14);
+}
+
+function updateHUD() {
+  document.getElementById('score-display').textContent = String(score).padStart(5, '0');
+  document.getElementById('best-display').textContent = String(best).padStart(5, '0');
+  document.getElementById('level-badge').textContent = `LVL ${level + 1}`;
+  document.getElementById('level-name-bottom').textContent = theme.name;
+}
+
+function step() {
+  dir = nextDir;
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  // wall collision
+  if (head.x < 0 || head.x >= COLS || head.y < 0 || head.y >= ROWS) return gameOver();
+  // self collision
+  if (snake.some(s => s.x === head.x && s.y === head.y)) return gameOver();
+  // obstacle collision
+  if (obstacles.some(o => o.x === head.x && o.y === head.y)) return gameOver();
+
+  snake.unshift(head);
+
+  if (head.x === food.x && head.y === food.y) {
+    score++;
+    if (score > best) {
+      best = score;
+      localStorage.setItem('snakeClassicBest', best);
+      // shake best score
+      const bd = document.getElementById('best-display');
+      bd.classList.remove('shake');
+      void bd.offsetWidth;
+      bd.classList.add('shake');
+    }
+
+    // level up every 5 food
+    if (score % 5 === 0) {
+      level++;
+      theme = getTheme(level);
+      addObstacle();
+      showLevelFlash();
+    }
+
+    updateHUD();
+    placeFood();
+    clearTimeout(loopTimer);
+    loopTimer = setTimeout(step, getSpeed());
+  } else {
+    snake.pop();
+    loopTimer = setTimeout(step, getSpeed());
+  }
+}
+
+let drawFrame;
+function gameLoop() {
+  frameCount++;
+  // move clouds
+  clouds.forEach(c => {
+    c.x -= c.speed;
+    if (c.x + c.w < 0) { c.x = canvas.width + 20; c.y = 20 + Math.random() * 60; }
+  });
+  draw();
+  drawFrame = requestAnimationFrame(gameLoop);
+}
+
+function draw() {
+  const t = theme;
+  ctx.fillStyle = t.bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // subtle grid
+  ctx.strokeStyle = t.grid;
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x <= COLS; x++) { ctx.beginPath(); ctx.moveTo(x * CELL, 0); ctx.lineTo(x * CELL, canvas.height); ctx.stroke(); }
+  for (let y = 0; y <= ROWS; y++) { ctx.beginPath(); ctx.moveTo(0, y * CELL); ctx.lineTo(canvas.width, y * CELL); ctx.stroke(); }
+
+  // clouds (like dino)
+  ctx.fillStyle = t.grid.replace('0.04', '0.4');
+  clouds.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x + c.w * 0.3, c.y, c.w * 0.25, 0, Math.PI * 2);
+    ctx.arc(c.x + c.w * 0.6, c.y - 6, c.w * 0.2, 0, Math.PI * 2);
+    ctx.arc(c.x + c.w * 0.7, c.y, c.w * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // obstacles (like cacti)
+  ctx.fillStyle = t.obstacle;
+  obstacles.forEach(o => {
+    // draw cactus-like obstacle
+    const ox = o.x * CELL;
+    const oy = o.y * CELL;
+    ctx.fillRect(ox + 6, oy + 2, 8, 16); // body
+    ctx.fillRect(ox + 2, oy + 6, 6, 4);  // left arm
+    ctx.fillRect(ox + 12, oy + 8, 6, 4); // right arm
+    ctx.fillRect(ox + 2, oy + 2, 4, 6);  // left arm up
+    ctx.fillRect(ox + 14, oy + 4, 4, 6); // right arm up
+  });
+
+  // food — pixel apple style
+  const fx = food.x * CELL;
+  const fy = food.y * CELL;
+  ctx.fillStyle = t.food;
+  ctx.fillRect(fx + 4, fy + 6, 12, 10);
+  ctx.fillRect(fx + 6, fy + 4, 8, 2);
+  ctx.fillRect(fx + 4, fy + 4, 2, 2);
+  ctx.fillRect(fx + 14, fy + 4, 2, 2);
+  // leaf
+  ctx.fillRect(fx + 9, fy + 2, 3, 4);
+  ctx.fillRect(fx + 11, fy + 2, 3, 2);
+
+  // snake — pixel style like dino
+  snake.forEach((seg, i) => {
+    const sx = seg.x * CELL;
+    const sy = seg.y * CELL;
+    const pad = 1;
+
+    if (i === 0) {
+      // head — detailed pixel head
+      ctx.fillStyle = t.snake;
+      ctx.fillRect(sx + pad, sy + pad, CELL - pad * 2, CELL - pad * 2);
+
+      // eyes
+      ctx.fillStyle = t.bg;
+      if (dir.x === 1) { // right
+        ctx.fillRect(sx + 12, sy + 5, 4, 4);
+        ctx.fillRect(sx + 12, sy + 11, 4, 4);
+        ctx.fillStyle = t.snake;
+        ctx.fillRect(sx + 14, sy + 6, 2, 2);
+        ctx.fillRect(sx + 14, sy + 12, 2, 2);
+      } else if (dir.x === -1) { // left
+        ctx.fillRect(sx + 4, sy + 5, 4, 4);
+        ctx.fillRect(sx + 4, sy + 11, 4, 4);
+        ctx.fillStyle = t.snake;
+        ctx.fillRect(sx + 4, sy + 6, 2, 2);
+        ctx.fillRect(sx + 4, sy + 12, 2, 2);
+      } else if (dir.y === -1) { // up
+        ctx.fillRect(sx + 5, sy + 4, 4, 4);
+        ctx.fillRect(sx + 11, sy + 4, 4, 4);
+        ctx.fillStyle = t.snake;
+        ctx.fillRect(sx + 6, sy + 4, 2, 2);
+        ctx.fillRect(sx + 12, sy + 4, 2, 2);
+      } else { // down
+        ctx.fillRect(sx + 5, sy + 12, 4, 4);
+        ctx.fillRect(sx + 11, sy + 12, 4, 4);
+        ctx.fillStyle = t.snake;
+        ctx.fillRect(sx + 6, sy + 14, 2, 2);
+        ctx.fillRect(sx + 12, sy + 14, 2, 2);
+      }
+
+      // tongue
+      ctx.fillStyle = '#cc2200';
+      if (dir.x === 1) { ctx.fillRect(sx + 18, sy + 9, 3, 2); ctx.fillRect(sx + 20, sy + 8, 2, 1); ctx.fillRect(sx + 20, sy + 11, 2, 1); }
+      else if (dir.x === -1) { ctx.fillRect(sx - 1, sy + 9, 3, 2); ctx.fillRect(sx - 1, sy + 8, 2, 1); ctx.fillRect(sx - 1, sy + 11, 2, 1); }
+      else if (dir.y === -1) { ctx.fillRect(sx + 9, sy - 1, 2, 3); ctx.fillRect(sx + 8, sy - 1, 1, 2); ctx.fillRect(sx + 11, sy - 1, 1, 2); }
+      else { ctx.fillRect(sx + 9, sy + 18, 2, 3); ctx.fillRect(sx + 8, sy + 20, 1, 2); ctx.fillRect(sx + 11, sy + 20, 1, 2); }
+
+    } else {
+      // body segments — slightly lighter, scales pattern
+      const alpha = Math.max(0.3, 1 - i / snake.length * 0.5);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = t.snake;
+      ctx.fillRect(sx + pad + 1, sy + pad + 1, CELL - pad * 2 - 2, CELL - pad * 2 - 2);
+
+      // scale detail every 2 segments
+      if (i % 2 === 0) {
+        ctx.fillStyle = t.bg;
+        ctx.globalAlpha = alpha * 0.3;
+        ctx.fillRect(sx + 5, sy + 5, 4, 4);
+        ctx.fillRect(sx + 11, sy + 11, 4, 4);
+      }
+      ctx.globalAlpha = 1;
+    }
+  });
+
+  // ground line (like dino)
+  ctx.fillStyle = t.snake;
+  ctx.fillRect(0, canvas.height - 2, canvas.width, 2);
+}
+
+function showLevelFlash() {
+  const lf = document.getElementById('level-flash');
+  document.getElementById('lf-num').textContent = `LVL ${level + 1}`;
+  document.getElementById('lf-name').textContent = theme.name;
+  lf.style.color = theme.snake;
+  lf.classList.add('show');
+  setTimeout(() => lf.classList.remove('show'), 900);
+}
+
+function gameOver() {
+  clearTimeout(loopTimer);
+  cancelAnimationFrame(drawFrame);
+  running = false;
+
+  const overlay = document.getElementById('overlay');
+  document.getElementById('overlay-icon').textContent = '💀';
+  document.getElementById('overlay-title').textContent = 'GAME OVER';
+  document.getElementById('overlay-sub').textContent = theme.name + ' · LVL ' + (level + 1);
+  const os = document.getElementById('overlay-score');
+  os.style.opacity = '1';
+  os.textContent = `SCORE: ${String(score).padStart(5,'0')}  HI: ${String(best).padStart(5,'0')}`;
+  document.querySelector('.key-hint').textContent = 'SPACE / ENTER';
+  overlay.classList.remove('hidden');
+  draw();
+}
+
+function startGame() {
+  const overlay = document.getElementById('overlay');
+  overlay.classList.add('hidden');
+  cancelAnimationFrame(drawFrame);
+  init();
+  running = true;
+  gameLoop();
+  loopTimer = setTimeout(step, getSpeed());
+}
+
+// show start screen
+document.getElementById('best-display').textContent = String(best).padStart(5, '0');
+
+// keyboard
+const DIRS = {
+  ArrowUp:{x:0,y:-1}, w:{x:0,y:-1}, W:{x:0,y:-1},
+  ArrowDown:{x:0,y:1}, s:{x:0,y:1}, S:{x:0,y:1},
+  ArrowLeft:{x:-1,y:0}, a:{x:-1,y:0}, A:{x:-1,y:0},
+  ArrowRight:{x:1,y:0}, d:{x:1,y:0}, D:{x:1,y:0},
+};
+
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') {
+    if (!running) { startGame(); return; }
+  }
+  const d = DIRS[e.key];
+  if (!d) return;
+  e.preventDefault();
+  if (!running) return;
+  if (d.x === -dir.x && d.y === -dir.y) return;
+  nextDir = d;
+});
+
+// swipe
+let ts = null;
+document.addEventListener('touchstart', e => { ts = e.touches[0]; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (!ts || !running) return;
+  const dx = e.changedTouches[0].clientX - ts.clientX;
+  const dy = e.changedTouches[0].clientY - ts.clientY;
+  if (Math.abs(dx) > Math.abs(dy)) nextDir = dx > 0 ? {x:1,y:0} : {x:-1,y:0};
+  else nextDir = dy > 0 ? {x:0,y:1} : {x:0,y:-1};
+}, { passive: true });
+
+// initial draw
+init();
+draw();
+</script>
+</body>
+</html>
