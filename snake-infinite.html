@@ -84,6 +84,19 @@ function sndDeath(){[220,180,140,100,80].forEach((f,i)=>beep(f,'sawtooth',0.15,0
 function sndHiScore(){[523,659,784,1047,1318,1568].forEach((f,i)=>beep(f,'square',0.12,0.18,i*0.09));}
 function sndMove(){beep(180,'square',0.015,0.04,0);}
 
+// BACKGROUND MUSIC ENGINE — neon/electronic feel
+const MELODY=[330,0,330,0,0,330,0,262,0,330,0,0,392,0,0,0,196,0,0,0,262,0,0,196,0,0,220,0,0,233,0,0,220,0,0,196,0,330,0,392,0,440,0,0,349,0,392,0,0,330,0,262,0,294,0,247,0,0,0];
+let musicOn=false,mStep=0,mTimer=null;
+function musicTick(){
+  if(!musicOn)return;
+  const f=MELODY[mStep%MELODY.length];
+  if(f>0)beep(f,'square',0.13,0.06,0);
+  mStep++;
+  mTimer=setTimeout(musicTick,140);
+}
+function startMusic(){if(musicOn)return;musicOn=true;mStep=0;musicTick();}
+function stopMusic(){musicOn=false;clearTimeout(mTimer);}
+
 // THEMES
 const LEVELS=[
   {name:"THE VOID",bg:"#03050a",snake:"#00ffcc",food:"#00ffcc",trail:"rgba(0,255,204,0.15)",glow:"0 0 15px #00ffcc",accent:"#00ffcc"},
@@ -150,7 +163,7 @@ function applyTheme(){
 function placeFood(){
   let p;do{p={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)};}while(snake.some(s=>s.x===p.x&&s.y===p.y));food=p;
 }
-function spd(){return Math.max(65,220-level*13);}
+function spd(){return Math.max(65,150-level*8);}
 function updateHUD(){
   document.getElementById('score-display').textContent=score;
   document.getElementById('best-display').textContent=best;
@@ -189,7 +202,7 @@ function updateSmooth(){
 }
 
 function triggerDeath(){
-  dying=true;sndDeath();
+  dying=true;stopMusic();sndDeath();
   const df=document.getElementById('death-flash');
   df.classList.add('show');setTimeout(()=>df.classList.remove('show'),150);
   const gb=document.getElementById('game-box');
@@ -328,6 +341,7 @@ function startGame(){
   if(AC.state==='suspended')AC.resume();
   document.getElementById('overlay').classList.add('hidden');
   cancelAnimationFrame(raf);init();running=true;
+  startMusic();
   gameLoop();lastStep=performance.now();loopTimer=setTimeout(step,spd());
 }
 

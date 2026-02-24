@@ -93,6 +93,19 @@ function sndDeath(){[220,180,140,100].forEach((f,i)=>beep(f,'sawtooth',0.15,0.25
 function sndHiScore(){[523,659,784,1047,1318].forEach((f,i)=>beep(f,'square',0.12,0.2,i*0.1));}
 function sndMove(){beep(200,'square',0.02,0.04,0);}
 
+// BACKGROUND MUSIC ENGINE
+const MELODY=[262,0,294,0,330,0,349,0,392,0,349,0,330,0,294,262,0,262,0,294,0,330,0,262,0,0,0,294,0,330,0,392,0,392,0,330,0,294,262,349,0,330,0,294,0,262,0,0,0,0,0];
+let musicOn=false,mStep=0,mTimer=null;
+function musicTick(){
+  if(!musicOn)return;
+  const f=MELODY[mStep%MELODY.length];
+  if(f>0)beep(f,'square',0.13,0.055,0);
+  mStep++;
+  mTimer=setTimeout(musicTick,165);
+}
+function startMusic(){if(musicOn)return;musicOn=true;mStep=0;musicTick();}
+function stopMusic(){musicOn=false;clearTimeout(mTimer);}
+
 // SETUP
 const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');
 const COLS=30,ROWS=20,CELL=20;
@@ -142,7 +155,7 @@ function addObs(){
   if(n<50)obs.push(p);
 }
 
-function spd(){return Math.max(65,220-level*13);}
+function spd(){return Math.max(65,150-level*8);}
 function updateHUD(){
   document.getElementById('score-display').textContent=String(score).padStart(5,'0');
   document.getElementById('best-display').textContent=String(best).padStart(5,'0');
@@ -181,7 +194,7 @@ function updateSmooth(){
 }
 
 function triggerDeath(){
-  dying=true;sndDeath();
+  dying=true;stopMusic();sndDeath();
   const df=document.getElementById('death-flash');
   df.classList.add('show');setTimeout(()=>df.classList.remove('show'),150);
   const gw=document.getElementById('game-wrap');
@@ -301,6 +314,7 @@ function startGame(){
   if(AC.state==='suspended')AC.resume();
   document.getElementById('overlay').classList.add('hidden');
   cancelAnimationFrame(raf);init();running=true;
+  startMusic();
   gameLoop();lastStep=performance.now();loopTimer=setTimeout(step,spd());
 }
 
